@@ -1,0 +1,10 @@
+function formatDate(date) {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+module.exports = { formatDate };

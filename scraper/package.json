@@ -1,0 +1,18 @@
+{
+  "name": "@zephyr/scraper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js",
+    "lint": "echo 'No linter configured'"
+  },
+  "dependencies": {
+    "playwright": "^1.41.0",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.1",
+    "node-cron": "^3.0.3"
+  }
+}

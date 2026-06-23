@@ -1,0 +1,200 @@
+### Health check
+GET http://localhost:5000/api/health
+
+### Register admin (if not already)
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@pixelworks.com",
+  "password": "admin12345",
+  "role": "ADMIN"
+}
+
+### Register employee (if not already)
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Employee User",
+  "email": "employee@pixelworks.com",
+  "password": "employee12345",
+  "role": "EMPLOYEE"
+}
+
+### Login as admin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@pixelworks.com",
+  "password": "admin12345"
+}
+
+### Login as employee
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee@pixelworks.com",
+  "password": "employee12345"
+}
+
+### ==================== LEADS ====================
+
+### Create a lead (manual)
+POST http://localhost:5000/api/leads
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "companyName": "Acme Corp",
+  "website": "https://acme.com",
+  "industry": "Technology",
+  "country": "United States",
+  "contactName": "John Doe",
+  "email": "john@acme.com",
+  "phone": "+1 555-0123",
+  "businessSize": "MEDIUM"
+}
+
+### Create another lead
+POST http://localhost:5000/api/leads
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "companyName": "TechStart Inc",
+  "website": "https://techstart.io",
+  "industry": "E-Commerce",
+  "country": "United Kingdom",
+  "contactName": "Jane Smith",
+  "email": "jane@techstart.io",
+  "businessSize": "SMALL"
+}
+
+### Create a third lead
+POST http://localhost:5000/api/leads
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "companyName": "Global Health Solutions",
+  "industry": "Healthcare",
+  "country": "Canada",
+  "contactName": "Dr. Sarah Lee",
+  "email": "sarah@globalhealth.ca",
+  "businessSize": "LARGE"
+}
+
+### Get all leads
+GET http://localhost:5000/api/leads?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Get leads with status filter
+GET http://localhost:5000/api/leads?status=NEW_LEAD
+Authorization: Bearer {{adminToken}}
+
+### Get leads with search
+GET http://localhost:5000/api/leads?search=acme
+Authorization: Bearer {{adminToken}}
+
+### Get leads with industry filter
+GET http://localhost:5000/api/leads?industry=Technology
+Authorization: Bearer {{adminToken}}
+
+### Get leads sorted by company name ascending
+GET http://localhost:5173/api/leads?sortBy=companyName&sortOrder=asc
+Authorization: Bearer {{adminToken}}
+
+### Get lead by ID (replace with actual lead ID)
+GET http://localhost:5000/api/leads/{{leadId}}
+Authorization: Bearer {{adminToken}}
+
+### Update lead status
+PUT http://localhost:5000/api/leads/{{leadId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "CONTACTED",
+  "contactName": "John Doe (Updated)"
+}
+
+### Assign lead to employee
+PUT http://localhost:5000/api/leads/{{leadId}}/assign
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "assignedToId": "{{employeeId}}"
+}
+
+### Get lead stats (admin - global)
+GET http://localhost:5000/api/leads/stats
+Authorization: Bearer {{adminToken}}
+
+### Get lead stats (employee - own only)
+GET http://localhost:5000/api/leads/stats
+Authorization: Bearer {{employeeToken}}
+
+### Bulk import leads
+POST http://localhost:5000/api/leads/bulk-import
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "leads": [
+    {
+      "companyName": "Bulk Corp 1",
+      "email": "info@bulk1.com",
+      "industry": "Finance"
+    },
+    {
+      "companyName": "Bulk Corp 2",
+      "email": "info@bulk2.com",
+      "industry": "Education"
+    },
+    {
+      "companyName": "Bulk Corp 3",
+      "website": "https://bulk3.com",
+      "industry": "Retail"
+    }
+  ]
+}
+
+### Delete a lead
+DELETE http://localhost:5000/api/leads/{{leadId}}
+Authorization: Bearer {{adminToken}}
+
+### Try to delete as employee (should fail with 403)
+DELETE http://localhost:5000/api/leads/{{leadId}}
+Authorization: Bearer {{employeeToken}}
+
+### ==================== EMPLOYEES ====================
+
+### Get all employees
+GET http://localhost:5000/api/employees
+Authorization: Bearer {{adminToken}}
+
+### Get employee by ID
+GET http://localhost:5000/api/employees/{{employeeId}}
+Authorization: Bearer {{adminToken}}
+
+### Update employee name
+PUT http://localhost:5000/api/employees/{{employeeId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Updated Employee Name"
+}
+
+### Get employee performance
+GET http://localhost:5000/api/employees/{{employeeId}}/performance
+Authorization: Bearer {{adminToken}}
+
+### Try to access employees as employee (should fail with 403)
+GET http://localhost:5000/api/employees
+Authorization: Bearer {{employeeToken}}

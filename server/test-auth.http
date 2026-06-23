@@ -1,0 +1,94 @@
+### Register a new admin user
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@pixelworks.com",
+  "password": "admin12345",
+  "role": "ADMIN"
+}
+
+### Register a new employee user
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Employee User",
+  "email": "employee@pixelworks.com",
+  "password": "employee12345",
+  "role": "EMPLOYEE"
+}
+
+### Login with admin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@pixelworks.com",
+  "password": "admin12345"
+}
+
+### Login with employee
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee@pixelworks.com",
+  "password": "employee12345"
+}
+
+### GET /me with Bearer token (replace <token> with actual token)
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer <token>
+
+### Update profile
+PUT http://localhost:5000/api/auth/profile
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "name": "Updated Name"
+}
+
+### Test with wrong password
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@pixelworks.com",
+  "password": "wrongpassword"
+}
+
+### Test with duplicate email
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Duplicate User",
+  "email": "admin@pixelworks.com",
+  "password": "password12345"
+}
+
+### Test with invalid email format
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Bad Email",
+  "email": "not-an-email",
+  "password": "password12345"
+}
+
+### Test with short password
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Short Pass",
+  "email": "short@test.com",
+  "password": "123"
+}
+
+### Health check
+GET http://localhost:5000/api/health

@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+enum BusinessSize {
+  SOLO
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum LeadStatus {
+  NEW_LEAD
+  CONTACTED
+  EMAIL_SENT
+  FOLLOW_UP_REQUIRED
+  INTERESTED
+  MEETING_SCHEDULED
+  PROPOSAL_SENT
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+enum LeadSource {
+  AI_DISCOVERED
+  MANUAL
+  CSV_IMPORT
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  STATUS_CHANGE
+  FOLLOW_UP
+}
+
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  name       String
+  role       UserRole @default(EMPLOYEE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  leads      Lead[]
+  activities Activity[]
+  followUps  FollowUp[]
+}
+
+model Lead {
+  id                  String       @id @default(uuid())
+  companyName         String
+  website             String?
+  industry            String?
+  country             String?
+  contactName         String?
+  email               String?
+  phone               String?
+  linkedinUrl         String?
+  twitterUrl          String?
+  businessSize        BusinessSize?
+  status              LeadStatus   @default(NEW_LEAD)
+  source              LeadSource   @default(MANUAL)
+  aiScore             Float?
+  aiAnalysis          String?      @db.Text
+  whyGoodProspect     String?      @db.Text
+  recommendedServices String?      @db.Text
+  emailTemplate       String?      @db.Text
+  callScript          String?      @db.Text
+  assignedToId        String?
+  assignedTo          User?        @relation(fields: [assignedToId], references: [id])
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  activities          Activity[]
+  followUps           FollowUp[]
+}
+
+model Activity {
+  id        String       @id @default(uuid())
+  leadId    String
+  userId    String
+  type      ActivityType
+  content   String       @db.Text
+  createdAt DateTime     @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FollowUp {
+  id          String   @id @default(uuid())
+  leadId      String
+  userId      String
+  scheduledAt DateTime
+  note        String?  @db.Text
+  done        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

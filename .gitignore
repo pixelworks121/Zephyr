@@ -1,0 +1,26 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+build/
+.next/
+.turbo/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Prisma
+prisma/migrations/**/migration_lock.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

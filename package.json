@@ -1,0 +1,25 @@
+{
+  "name": "zephyr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered lead generation and CRM platform for Pixel Works",
+  "workspaces": [
+    "client",
+    "server",
+    "ai-engine",
+    "scraper",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "dev:ai": "npm run dev -w ai-engine",
+    "dev:scraper": "npm run dev -w scraper",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "dependencies": {
+    "ci": "^2.3.0"
+  }
+}

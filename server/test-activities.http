@@ -1,0 +1,200 @@
+### Health check
+GET http://localhost:5000/api/health
+
+### Login as admin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@pixelworks.com",
+  "password": "admin12345"
+}
+
+### Login as employee
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "employee@pixelworks.com",
+  "password": "employee12345"
+}
+
+### ==================== ACTIVITIES ====================
+
+### Log a NOTE activity on a lead
+POST http://localhost:5000/api/activities
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "leadId": "{{leadId}}",
+  "type": "NOTE",
+  "content": "Had a preliminary discussion about their web redesign needs."
+}
+
+### Log a CALL activity
+POST http://localhost:5000/api/activities
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "leadId": "{{leadId}}",
+  "type": "CALL",
+  "content": "Called John Doe to discuss the project timeline. He confirmed budget approval is pending."
+}
+
+### Log an EMAIL activity
+POST http://localhost:5000/api/activities
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "leadId": "{{leadId}}",
+  "type": "EMAIL",
+  "content": "Sent introductory email with portfolio links and case studies."
+}
+
+### Log a MEETING activity
+POST http://localhost:5000/api/activities
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "leadId": "{{leadId}}",
+  "type": "MEETING",
+  "content": "Scheduled Zoom meeting for next Tuesday to demo our services."
+}
+
+### Get all activities for a lead
+GET http://localhost:5000/api/activities/lead/{{leadId}}?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Filter activities by type for a lead
+GET http://localhost:5000/api/activities/lead/{{leadId}}?type=CALL
+Authorization: Bearer {{adminToken}}
+
+### Get my activities (admin)
+GET http://localhost:5000/api/activities/me?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Get my activities with date filter
+GET http://localhost:5000/api/activities/me?startDate=2026-01-01T00:00:00.000Z&endDate=2026-12-31T23:59:59.999Z
+Authorization: Bearer {{adminToken}}
+
+### Get all activities (admin only)
+GET http://localhost:5000/api/activities?page=1&limit=30
+Authorization: Bearer {{adminToken}}
+
+### Filter all activities by type
+GET http://localhost:5000/api/activities?type=NOTE
+Authorization: Bearer {{adminToken}}
+
+### Filter all activities by user
+GET http://localhost:5000/api/activities?userId={{employeeId}}
+Authorization: Bearer {{adminToken}}
+
+### Try to get all activities as employee (should fail with 403)
+GET http://localhost:5000/api/activities
+Authorization: Bearer {{employeeToken}}
+
+### Delete an activity
+DELETE http://localhost:5000/api/activities/{{activityId}}
+Authorization: Bearer {{adminToken}}
+
+### Try to delete a STATUS_CHANGE activity (should fail)
+DELETE http://localhost:5000/api/activities/{{statusChangeActivityId}}
+Authorization: Bearer {{adminToken}}
+
+### ==================== FOLLOW-UPS ====================
+
+### Create a follow-up (future date)
+POST http://localhost:5000/api/followups
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "leadId": "{{leadId}}",
+  "scheduledAt": "2026-07-01T10:00:00.000Z",
+  "note": "Follow up on proposal discussion"
+}
+
+### Create another follow-up
+POST http://localhost:5000/api/followups
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "leadId": "{{leadId}}",
+  "scheduledAt": "2026-07-05T14:00:00.000Z",
+  "note": "Check if contract was signed"
+}
+
+### Try to create follow-up with past date (should fail)
+POST http://localhost:5000/api/followups
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "leadId": "{{leadId}}",
+  "scheduledAt": "2025-01-01T10:00:00.000Z",
+  "note": "This should fail"
+}
+
+### Get follow-ups for a lead
+GET http://localhost:5000/api/followups/lead/{{leadId}}
+Authorization: Bearer {{adminToken}}
+
+### Get follow-ups for a lead filtered by done
+GET http://localhost:5000/api/followups/lead/{{leadId}}?done=false
+Authorization: Bearer {{adminToken}}
+
+### Get my follow-ups
+GET http://localhost:5000/api/followups/me
+Authorization: Bearer {{adminToken}}
+
+### Get my overdue follow-ups
+GET http://localhost:5000/api/followups/me?overdue=true
+Authorization: Bearer {{adminToken}}
+
+### Get my upcoming follow-ups
+GET http://localhost:5000/api/followups/me?upcoming=true
+Authorization: Bearer {{adminToken}}
+
+### Get all follow-ups (admin)
+GET http://localhost:5000/api/followups?page=1&limit=30
+Authorization: Bearer {{adminToken}}
+
+### Get all overdue follow-ups (admin)
+GET http://localhost:5000/api/followups?overdue=true
+Authorization: Bearer {{adminToken}}
+
+### Mark a follow-up as done
+PUT http://localhost:5000/api/followups/{{followUpId}}/done
+Authorization: Bearer {{adminToken}}
+
+### Update a follow-up (change date and note)
+PUT http://localhost:5000/api/followups/{{followUpId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "scheduledAt": "2026-07-10T11:00:00.000Z",
+  "note": "Updated note - rescheduled"
+}
+
+### Try to update a completed follow-up (should fail)
+PUT http://localhost:5000/api/followups/{{doneFollowUpId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "note": "This should fail"
+}
+
+### Delete a follow-up (admin)
+DELETE http://localhost:5000/api/followups/{{followUpId}}
+Authorization: Bearer {{adminToken}}
+
+### Try to delete as employee (should fail with 403)
+DELETE http://localhost:5000/api/followups/{{followUpId}}
+Authorization: Bearer {{employeeToken}}
