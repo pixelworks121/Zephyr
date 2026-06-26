@@ -95,6 +95,12 @@ export default function LeadsPage() {
     queryFn: () => leadsAPI.getAll(params),
     select: (res) => res.data,
     keepPreviousData: true,
+    // Auto-refetch every 20s while any lead is still being analyzed (no score yet).
+    refetchInterval: (query) => {
+      const leads = query.state.data?.data?.leads || [];
+      const hasUnanalyzed = leads.some((l) => l.aiScore == null);
+      return hasUnanalyzed ? 20000 : false;
+    },
   });
 
   const employeesQuery = useQuery({

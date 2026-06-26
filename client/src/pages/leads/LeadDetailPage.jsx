@@ -19,6 +19,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import CopyButton from '../../components/ui/CopyButton';
 import LeadStatusBadge from '../../components/leads/LeadStatusBadge';
 import AiScore from '../../components/leads/AiScore';
+import AutoRefreshTrigger from '../../components/leads/AutoRefreshTrigger';
 import LeadFormModal from '../../components/leads/LeadFormModal';
 import DeleteLeadButton from '../../components/leads/DeleteLeadButton';
 import LeadStatusUpdate from '../../components/leads/LeadStatusUpdate';
@@ -70,6 +71,11 @@ export default function LeadDetailPage() {
     queryKey: ['lead', id],
     queryFn: () => leadsAPI.getById(id),
     select: (res) => res.data,
+    // Poll every 15s while AI analysis is still pending (no score yet).
+    refetchInterval: (query) => {
+      const score = query.state.data?.data?.aiScore;
+      return score == null ? 15000 : false;
+    },
   });
 
   if (isLoading) {
@@ -226,7 +232,22 @@ export default function LeadDetailPage() {
             </div>
             
             {(!lead.whyGoodProspect && !lead.recommendedServices && !lead.aiAnalysis) ? (
-              <p className="text-sm text-text-secondary">No AI analysis available for this lead yet.</p>
+              lead.aiScore == null ? (
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 animate-pulse" />
+                    <span className="text-sm text-text-secondary">
+                      AI analysis queued — results will appear shortly
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-secondary mt-2">
+                    This lead is being analyzed automatically. This page refreshes on its own.
+                  </p>
+                  <AutoRefreshTrigger leadId={lead.id} hasScore={false} />
+                </div>
+              ) : (
+                <p className="text-sm text-text-secondary">No AI analysis available for this lead yet.</p>
+              )
             ) : (
               <div className="space-y-4">
                 {lead.whyGoodProspect && (

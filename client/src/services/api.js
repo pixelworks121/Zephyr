@@ -111,6 +111,7 @@ export const aiAPI = {
   batchAnalyze: (leadIds) => api.post('/ai/batch-analyze', { leadIds }),
   discuss: (id) => api.post(`/ai/discuss/${id}`),
   status: () => api.get('/ai/status'),
+  getQueue: () => api.get('/ai/queue'),
 };
 
 export default api;

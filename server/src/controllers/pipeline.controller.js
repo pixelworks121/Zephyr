@@ -1,6 +1,7 @@
 const prisma = require('../utils/prismaClient');
 const apiResponse = require('../utils/apiResponse');
 const { getStartOfDay, getStartOfWeek } = require('../utils/dateHelpers');
+const { queueMultipleLeadsForAnalysis } = require('../utils/autoAnalyze');
 
 let pipelineStatus = {
   isRunning: false,
@@ -37,6 +38,22 @@ const pipelineController = {
             prisma,
           });
           pipelineStatus.lastResult = result.summary;
+
+          // Auto-queue freshly discovered leads (saved during this run, not yet
+          // analyzed) for background AI analysis. Done here in the server process
+          // so it shares the same queue singleton as the controllers.
+          const discovered = await prisma.lead.findMany({
+            where: {
+              source: 'AI_DISCOVERED',
+              aiScore: null,
+              createdAt: { gte: startedAt },
+            },
+            select: { id: true },
+          });
+          if (discovered.length > 0) {
+            queueMultipleLeadsForAnalysis(discovered.map((l) => l.id));
+            console.log(`[PipelineController] Queued ${discovered.length} discovered leads for auto AI analysis`);
+          }
         } catch (err) {
           console.error('[PipelineController] Error:', err.message);
         } finally {

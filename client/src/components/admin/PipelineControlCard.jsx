@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, Loader2, Zap } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { pipelineAPI, getErrorMessage } from '../../services/api';
+import { pipelineAPI, aiAPI, getErrorMessage } from '../../services/api';
 import { toast } from '../ui/useToast';
 import { timeAgo } from '../../utils/formatDate';
 
@@ -14,6 +14,13 @@ export default function PipelineControlCard() {
     queryFn: () => pipelineAPI.getStatus(),
     select: (res) => res.data,
     refetchInterval: (query) => query.state.data?.isRunning ? 5000 : 30000,
+  });
+
+  const { data: queue } = useQuery({
+    queryKey: ['ai-queue'],
+    queryFn: () => aiAPI.getQueue(),
+    select: (res) => res.data,
+    refetchInterval: 5000, // check queue every 5 seconds
   });
 
   const { data: usage } = useQuery({
@@ -60,6 +67,22 @@ export default function PipelineControlCard() {
       {status?.lastRun && (
         <p className="text-xs text-text-secondary mb-3">Last run: {timeAgo(status.lastRun)}</p>
       )}
+
+      {/* Auto AI analysis queue status */}
+      <div className="mb-4 rounded-lg bg-surface2 p-3">
+        {queue?.queued > 0 || queue?.isProcessing ? (
+          <span className="flex items-center gap-2 text-xs text-primary">
+            <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
+            {queue.queued > 0
+              ? `${queue.queued} lead${queue.queued === 1 ? '' : 's'} being analyzed automatically`
+              : 'Analyzing leads…'}
+          </span>
+        ) : (
+          <span className="flex items-center gap-2 text-xs text-green-500">
+            ✓ All leads analyzed
+          </span>
+        )}
+      </div>
 
       {usage && (
         <div className="space-y-1 mb-4 text-xs text-text-secondary">

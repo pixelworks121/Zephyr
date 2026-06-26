@@ -2,6 +2,7 @@ const { z } = require('zod');
 const { LEAD_STATUSES, LEAD_STATUS_LABELS } = require('@zephyr/shared');
 const prisma = require('../utils/prismaClient');
 const apiResponse = require('../utils/apiResponse');
+const { queueLeadForAnalysis, queueMultipleLeadsForAnalysis } = require('../utils/autoAnalyze');
 
 const leadStatusValues = Object.values(LEAD_STATUSES);
 const businessSizeValues = ['SOLO', 'SMALL', 'MEDIUM', 'LARGE'];
@@ -100,6 +101,9 @@ const leadsController = {
       });
 
       await logActivity(lead.id, req.user.id, 'STATUS_CHANGE', 'Lead created with status New Lead');
+
+      // Trigger AI analysis automatically in the background (non-blocking).
+      queueLeadForAnalysis(lead.id);
 
       return apiResponse.success(res, lead, 'Lead created', 201);
     } catch (err) {
@@ -348,6 +352,9 @@ const leadsController = {
           )
         );
         created = result.length;
+
+        // Queue all newly created leads for auto AI analysis (non-blocking).
+        queueMultipleLeadsForAnalysis(result.map((l) => l.id));
       }
 
       return apiResponse.success(res, {

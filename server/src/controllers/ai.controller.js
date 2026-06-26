@@ -1,5 +1,6 @@
 const prisma = require('../utils/prismaClient');
 const apiResponse = require('../utils/apiResponse');
+const { getQueueStatus } = require('../utils/autoAnalyze');
 
 // The ai-engine package is ESM ("type":"module") while this server is CommonJS,
 // so it must be loaded via dynamic import() rather than require().
@@ -198,6 +199,24 @@ const aiController = {
           multiAgentDiscussion: aiConfig.ai1.configured && aiConfig.ai2.configured,
         },
         stats: { leadsWithScore, leadsWithoutScore, avgScore },
+        queue: getQueueStatus(),
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getQueueStatusEndpoint(req, res, next) {
+    try {
+      const status = getQueueStatus();
+
+      const pendingAnalysis = await prisma.lead.count({
+        where: { aiScore: null },
+      });
+
+      return apiResponse.success(res, {
+        ...status,
+        pendingAnalysis,
       });
     } catch (err) {
       next(err);

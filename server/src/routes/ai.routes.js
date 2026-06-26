@@ -11,5 +11,6 @@ router.post('/analyze/:id', aiController.analyzeLeadById);
 router.post('/batch-analyze', requireAdmin, aiController.batchAnalyzeLeads);
 router.post('/discuss/:id', requireAdmin, aiController.runDiscussionAnalysis);
 router.get('/status', aiController.getAIStatus);
+router.get('/queue', aiController.getQueueStatusEndpoint);
 
 module.exports = router;

@@ -6,14 +6,28 @@ export function scoreColor(score) {
   return '#ef4444';
 }
 
-export default function AiScore({ score, size = 'md', showOutOf = false }) {
-  const color = scoreColor(score);
-  const display = score == null ? '—' : Math.round(score * 10) / 10;
+export default function AiScore({ score, size = 'md', showOutOf = false, analyzing = true }) {
   const cls = size === 'lg' ? 'text-2xl font-bold' : 'text-sm font-semibold';
+
+  // No score yet — with auto-analysis enabled, this means it's being analyzed.
+  if (score == null) {
+    if (analyzing) {
+      return (
+        <span className={`inline-flex items-center gap-1.5 ${size === 'lg' ? 'text-sm' : 'text-xs'} text-text-secondary font-medium`}>
+          <span className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
+          Analyzing…
+        </span>
+      );
+    }
+    return <span className={cls} style={{ color: scoreColor(score) }}>—</span>;
+  }
+
+  const color = scoreColor(score);
+  const display = Math.round(score * 10) / 10;
   return (
     <span className={cls} style={{ color }}>
       {display}
-      {showOutOf && score != null && <span className="text-text-secondary text-xs font-normal">/10</span>}
+      {showOutOf && <span className="text-text-secondary text-xs font-normal">/10</span>}
     </span>
   );
 }
