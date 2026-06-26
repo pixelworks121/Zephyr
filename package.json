@@ -5,6 +5,7 @@
   "type": "module",
   "description": "AI-powered lead generation and CRM platform for Pixel Works",
   "workspaces": [
+    
     "client",
     "server",
     "ai-engine",
