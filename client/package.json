@@ -26,8 +26,5 @@
     "@tailwindcss/vite": "^4.0.0-alpha.26",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.35"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.62.2"
   }
 }
