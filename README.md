@@ -36,3 +36,5 @@ npx prisma studio -w server
 
 frontend - vercel
 backend - render
+
+ai from groq
