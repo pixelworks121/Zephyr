@@ -33,3 +33,6 @@ npm run dev:server
 npx prisma db push -w server
 npx prisma studio -w server
 ```
+
+frontend - vercel
+backend - render
