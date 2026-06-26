@@ -23,8 +23,8 @@ npm run dev                # starts all packages
 Individual packages:
 
 ```bash
-npm run dev:client
-npm run dev:server
+npm run dev:client    frontend 
+npm run dev:server    backend
 ```
 
 ## Database
