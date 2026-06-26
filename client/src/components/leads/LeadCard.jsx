@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import LeadStatusBadge from './LeadStatusBadge';
 import AiScore from './AiScore';
-import { formatDate } from '../../utils/formatDate';
+import { formatDate, isRecent } from '../../utils/formatDate';
 import { countryFlag } from '../../utils/flags';
 
 export default function LeadCard({ lead }) {
@@ -16,7 +16,7 @@ export default function LeadCard({ lead }) {
         <h3 className="font-medium text-text truncate">
           {countryFlag(lead.country)} {lead.companyName}
         </h3>
-        <AiScore score={lead.aiScore} />
+        <AiScore score={lead.aiScore} analyzing={lead.aiScore == null && isRecent(lead.createdAt)} />
       </div>
       <div className="mt-2 flex items-center justify-between gap-2">
         <LeadStatusBadge status={lead.status} />

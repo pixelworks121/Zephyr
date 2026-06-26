@@ -33,7 +33,7 @@ import { leadsAPI, employeesAPI, aiAPI, getErrorMessage } from '../../services/a
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../components/ui/useToast';
 import useDebounce from '../../hooks/useDebounce';
-import { formatDate } from '../../utils/formatDate';
+import { formatDate, isRecent } from '../../utils/formatDate';
 import { countryFlag } from '../../utils/flags';
 import {
   LEAD_STATUSES,
@@ -95,11 +95,12 @@ export default function LeadsPage() {
     queryFn: () => leadsAPI.getAll(params),
     select: (res) => res.data,
     keepPreviousData: true,
-    // Auto-refetch every 20s while any lead is still being analyzed (no score yet).
+    // Auto-refetch every 20s only while a recently-created lead is still being
+    // analyzed (old/failed unscored leads don't trigger perpetual polling).
     refetchInterval: (query) => {
       const leads = query.state.data?.data?.leads || [];
-      const hasUnanalyzed = leads.some((l) => l.aiScore == null);
-      return hasUnanalyzed ? 20000 : false;
+      const hasRecentPending = leads.some((l) => l.aiScore == null && isRecent(l.createdAt));
+      return hasRecentPending ? 20000 : false;
     },
   });
 
@@ -315,7 +316,7 @@ export default function LeadsPage() {
                       <LeadStatusBadge status={lead.status} />
                     </td>
                     <td className="px-4 py-3">
-                      <AiScore score={lead.aiScore} />
+                      <AiScore score={lead.aiScore} analyzing={lead.aiScore == null && isRecent(lead.createdAt)} />
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="default" size="sm">

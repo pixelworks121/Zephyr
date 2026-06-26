@@ -6,10 +6,10 @@ export function scoreColor(score) {
   return '#ef4444';
 }
 
-export default function AiScore({ score, size = 'md', showOutOf = false, analyzing = true }) {
+export default function AiScore({ score, size = 'md', showOutOf = false, analyzing = false }) {
   const cls = size === 'lg' ? 'text-2xl font-bold' : 'text-sm font-semibold';
 
-  // No score yet — with auto-analysis enabled, this means it's being analyzed.
+  // No score yet.
   if (score == null) {
     if (analyzing) {
       return (
@@ -19,7 +19,11 @@ export default function AiScore({ score, size = 'md', showOutOf = false, analyzi
         </span>
       );
     }
-    return <span className={cls} style={{ color: scoreColor(score) }}>—</span>;
+    return (
+      <span className={`${size === 'lg' ? 'text-sm' : 'text-xs'} text-text-secondary`}>
+        Not analyzed
+      </span>
+    );
   }
 
   const color = scoreColor(score);

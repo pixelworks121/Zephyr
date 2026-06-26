@@ -1,5 +1,15 @@
 // Readable date formatting helpers.
 
+// True if `date` is within the last `minutes` minutes (used to decide whether a
+// lead with no AI score yet is genuinely still being analyzed vs. an old backlog
+// lead that was never queued / failed analysis.
+export function isRecent(date, minutes = 10) {
+  if (!date) return false;
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return false;
+  return Date.now() - d.getTime() < minutes * 60 * 1000;
+}
+
 export function formatDate(date) {
   if (!date) return '—';
   const d = new Date(date);

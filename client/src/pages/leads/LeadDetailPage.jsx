@@ -29,7 +29,7 @@ import LeadActivityTimeline from '../../components/leads/LeadActivityTimeline';
 import AIAnalysisButton from '../../components/admin/AIAnalysisButton';
 import { leadsAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
-import { formatDate } from '../../utils/formatDate';
+import { formatDate, isRecent } from '../../utils/formatDate';
 import {
   LEAD_SOURCE_LABELS,
   BUSINESS_SIZE_LABELS,
@@ -71,10 +71,11 @@ export default function LeadDetailPage() {
     queryKey: ['lead', id],
     queryFn: () => leadsAPI.getById(id),
     select: (res) => res.data,
-    // Poll every 15s while AI analysis is still pending (no score yet).
+    // Poll every 15s only while a recently-created lead is still pending analysis.
     refetchInterval: (query) => {
-      const score = query.state.data?.data?.aiScore;
-      return score == null ? 15000 : false;
+      const d = query.state.data?.data;
+      const pending = d && d.aiScore == null && isRecent(d.createdAt);
+      return pending ? 15000 : false;
     },
   });
 
@@ -136,7 +137,7 @@ export default function LeadDetailPage() {
               <div className="flex flex-col items-end gap-3 shrink-0">
                 <div className="text-right">
                   <p className="text-xs text-text-secondary">AI Score</p>
-                  <AiScore score={lead.aiScore} size="lg" showOutOf />
+                  <AiScore score={lead.aiScore} size="lg" showOutOf analyzing={lead.aiScore == null && isRecent(lead.createdAt)} />
                 </div>
                 {isAdmin && (
                   <div className="flex gap-2">
@@ -232,7 +233,7 @@ export default function LeadDetailPage() {
             </div>
             
             {(!lead.whyGoodProspect && !lead.recommendedServices && !lead.aiAnalysis) ? (
-              lead.aiScore == null ? (
+              lead.aiScore == null && isRecent(lead.createdAt) ? (
                 <div>
                   <div className="flex items-center gap-2.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 animate-pulse" />
@@ -246,7 +247,9 @@ export default function LeadDetailPage() {
                   <AutoRefreshTrigger leadId={lead.id} hasScore={false} />
                 </div>
               ) : (
-                <p className="text-sm text-text-secondary">No AI analysis available for this lead yet.</p>
+                <p className="text-sm text-text-secondary">
+                  No AI analysis yet. Use “Analyze” above to run it now.
+                </p>
               )
             ) : (
               <div className="space-y-4">
