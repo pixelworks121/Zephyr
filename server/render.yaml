@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: zephyr-backend
+    runtime: node
+    rootDir: server
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_URL
+        sync: false
+      - key: AI_1_PROVIDER
+        sync: false
+      - key: AI_1_API_KEY
+        sync: false
+      - key: AI_1_MODEL
+        sync: false
+      - key: AI_2_PROVIDER
+        sync: false
+      - key: AI_2_API_KEY
+        sync: false
+      - key: AI_2_MODEL
+        sync: false
+      - key: SERPER_API_KEY
+        sync: false
+      - key: HUNTER_API_KEY
+        sync: false
+      - key: APOLLO_API_KEY
+        sync: false
+      - key: PORT
+        value: 5000
