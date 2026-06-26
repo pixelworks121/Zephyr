@@ -2,41 +2,76 @@ import axios from 'axios'
 import dotenv from 'dotenv'
 dotenv.config()
 
-const GOOGLE_API_KEY = process.env.GOOGLE_SEARCH_API_KEY
-const SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID
+const SERPER_API_KEY = process.env.SERPER_API_KEY
+const SERPER_BASE = 'https://google.serper.dev'
 
-// Search Google Custom Search API
+// Track daily usage — Serper free tier: 2500 total queries
+let totalQueriesUsed = 0
+
+// Main search function — replaces googleSearch()
 // Returns array of { title, url, snippet, displayLink }
-export const googleSearch = async (query, options = {}) => {
-  const { num = 10, start = 1 } = options
+export const serperSearch = async (query, options = {}) => {
+  const { num = 10, type = 'search' } = options
+
+  if (!SERPER_API_KEY) {
+    console.warn('[Serper] SERPER_API_KEY not set — skipping search')
+    return { success: false, results: [], error: 'SERPER_API_KEY not configured' }
+  }
 
   try {
-    const response = await axios.get('https://www.googleapis.com/customsearch/v1', {
-      params: {
-        key: GOOGLE_API_KEY,
-        cx: SEARCH_ENGINE_ID,
+    const response = await axios.post(
+      `${SERPER_BASE}/${type}`,
+      {
         q: query,
-        num: Math.min(num, 10), // Google max is 10 per request
-        start
+        num: Math.min(num, 10),
+        gl: 'us',
+        hl: 'en'
+      },
+      {
+        headers: {
+          'X-API-KEY': SERPER_API_KEY,
+          'Content-Type': 'application/json'
+        }
       }
-    })
+    )
 
-    const items = response.data.items || []
+    totalQueriesUsed++
+    console.log(`[Serper] Query #${totalQueriesUsed}: "${query}"`)
+
+    const organic = response.data.organic || []
+
     return {
       success: true,
-      results: items.map(item => ({
+      results: organic.map(item => ({
         title: item.title,
         url: item.link,
         snippet: item.snippet,
-        displayLink: item.displayLink
+        displayLink: item.displayLink || new URL(item.link).hostname
       })),
-      totalResults: response.data.searchInformation?.totalResults || 0
+      totalResults: response.data.searchParameters?.num || organic.length,
+      creditsUsed: totalQueriesUsed
     }
   } catch (error) {
-    console.error('[GoogleSearch] Error:', error.response?.data || error.message)
-    return { success: false, results: [], error: error.message }
+    const status = error.response?.status
+    const message = error.response?.data?.message || error.message
+
+    if (status === 401) {
+      console.error('[Serper] Invalid API key')
+      return { success: false, results: [], error: 'Invalid Serper API key' }
+    }
+    if (status === 429) {
+      console.error('[Serper] Rate limit exceeded')
+      return { success: false, results: [], error: 'Serper rate limit exceeded' }
+    }
+
+    console.error('[Serper] Error:', message)
+    return { success: false, results: [], error: message }
   }
 }
+
+// Keep googleSearch as an alias for backward compatibility
+// All existing code that calls googleSearch() will still work
+export const googleSearch = serperSearch
 
 // Generate smart search queries for finding leads
 // targetType: 'agency' | 'ecommerce' | 'startup' | 'local' | 'saas'
@@ -54,9 +89,9 @@ export const generateLeadSearchQueries = (targetType, region = '') => {
     ecommerce: [
       `online store${regionSuffix} products`,
       `ecommerce business${regionSuffix} shop`,
-      `dropshipping store${regionSuffix}`,
       `shopify store${regionSuffix} products`,
-      `woocommerce store${regionSuffix}`
+      `woocommerce store${regionSuffix}`,
+      `dropshipping store${regionSuffix}`
     ],
     startup: [
       `startup${regionSuffix} app launch`,
@@ -84,11 +119,10 @@ export const generateLeadSearchQueries = (targetType, region = '') => {
   return queryTemplates[targetType] || queryTemplates.agency
 }
 
-// Extract a domain/company name from a search result URL
+// Extract domain from URL
 export const extractDomainFromUrl = (url) => {
   try {
-    const domain = new URL(url).hostname.replace('www.', '')
-    return domain
+    return new URL(url).hostname.replace('www.', '')
   } catch {
     return null
   }
@@ -110,3 +144,22 @@ export const searchResultToLead = (result) => {
     source: 'AI_DISCOVERED'
   }
 }
+
+// Domains to exclude from lead discovery
+export const EXCLUDED_DOMAINS = [
+  'wikipedia.org', 'facebook.com', 'twitter.com', 'linkedin.com',
+  'youtube.com', 'instagram.com', 'amazon.com', 'reddit.com',
+  'google.com', 'yelp.com', 'tripadvisor.com', 'crunchbase.com',
+  'indeed.com', 'glassdoor.com', 'quora.com', 'medium.com'
+]
+
+export const isExcludedDomain = (url) => {
+  return EXCLUDED_DOMAINS.some(domain => url.includes(domain))
+}
+
+// Get current usage stats
+export const getSerperUsage = () => ({
+  queriesUsed: totalQueriesUsed,
+  freeLimit: 2500,
+  remaining: Math.max(0, 2500 - totalQueriesUsed)
+})

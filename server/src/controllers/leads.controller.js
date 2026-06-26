@@ -404,13 +404,17 @@ const leadsController = {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-      const [total, leadsByStatus, leadsBySource, leadsByIndustry, weekLeads, monthLeads] = await Promise.all([
+      const [total, statusCounts, sourceCounts, leadsByIndustry, weekLeads, monthLeads] = await Promise.all([
         prisma.lead.count({ where }),
-        ...leadStatusValues.map((status) =>
-          prisma.lead.count({ where: { ...where, status } })
+        Promise.all(
+          leadStatusValues.map((status) =>
+            prisma.lead.count({ where: { ...where, status } })
+          )
         ),
-        ...sourceValues.map((source) =>
-          prisma.lead.count({ where: { ...where, source } })
+        Promise.all(
+          sourceValues.map((source) =>
+            prisma.lead.count({ where: { ...where, source } })
+          )
         ),
         prisma.lead.groupBy({
           by: ['industry'],
@@ -424,12 +428,12 @@ const leadsController = {
 
       const byStatus = {};
       leadStatusValues.forEach((status, i) => {
-        byStatus[status] = leadsByStatus[i];
+        byStatus[status] = statusCounts[i];
       });
 
       const bySource = {};
       sourceValues.forEach((source, i) => {
-        bySource[source] = leadsBySource[i];
+        bySource[source] = sourceCounts[i];
       });
 
       const byIndustry = {};

@@ -1,5 +1,4 @@
-import { googleSearch, generateLeadSearchQueries, searchResultToLead } from './sources/google-search.js'
-import { searchGoogleMaps, DISCOVERY_TARGETS } from './sources/google-maps.js'
+import { googleSearch, generateLeadSearchQueries, searchResultToLead, getSerperUsage } from './sources/google-search.js'
 import { extractCompanyInfo } from './sources/browser-agent.js'
 import { getProductHuntLeads } from './sources/product-hunt.js'
 import { findPublicContactInfo } from './enrichment/public-contact.js'
@@ -59,19 +58,6 @@ const runGoogleSearchDiscovery = async (options = {}) => {
   return leads
 }
 
-const runGoogleMapsDiscovery = async (options = {}) => {
-  const { targets = DISCOVERY_TARGETS.slice(0, 5) } = options
-  const leads = []
-  for (const target of targets) {
-    try {
-      const result = await searchGoogleMaps(target.keyword, target.location, { maxResults: 10 })
-      if (result.success) leads.push(...result.leads.map(l => ({ ...l, industry: target.industry || l.industry })))
-    } catch (e) { console.error('[Pipeline] Maps error:', e.message) }
-    await sleep(300)
-  }
-  return leads
-}
-
 const runProductHuntDiscovery = async () => {
   try {
     const result = await getProductHuntLeads({ limit: 15 })
@@ -117,7 +103,7 @@ const enrichPaid = async (lead) => {
 
 export const runDiscoveryPipeline = async (options = {}) => {
   const {
-    sources = ['google', 'maps', 'producthunt'],
+    sources = ['google', 'producthunt'],
     enrichPublic = true,
     enrichPaidApis = false,
     saveToServer = false,
@@ -131,7 +117,6 @@ export const runDiscoveryPipeline = async (options = {}) => {
 
   // Step 1 — Discover
   if (sources.includes('google')) allLeads.push(...await runGoogleSearchDiscovery())
-  if (sources.includes('maps')) allLeads.push(...await runGoogleMapsDiscovery())
   if (sources.includes('producthunt')) allLeads.push(...await runProductHuntDiscovery())
 
   console.log(`[Pipeline] Raw leads: ${allLeads.length}`)
@@ -191,6 +176,7 @@ export const runDiscoveryPipeline = async (options = {}) => {
     withEmail: allLeads.filter(l => l.email).length,
     withWebsite: allLeads.filter(l => l.website).length,
     saved, skipped,
+    serperUsage: getSerperUsage(),
     hunterUsage: getHunterUsage(),
     apolloUsage: getApolloUsage(),
     completedAt: new Date().toISOString()
@@ -208,4 +194,4 @@ export const discoverLeadsFromSearch = async (query) => {
 }
 
 // Re-exports for convenience
-export { getProductHuntLeads, searchGoogleMaps, DISCOVERY_TARGETS }
+export { getProductHuntLeads }

@@ -23,6 +23,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import EmptyState from '../../components/ui/EmptyState';
 import ActivityTypeIcon from '../../components/activities/ActivityTypeIcon';
 import PipelineControlCard from '../../components/admin/PipelineControlCard';
+import AIStatusCard from '../../components/admin/AIStatusCard';
 import { leadsAPI, employeesAPI, followUpsAPI, activitiesAPI } from '../../services/api';
 import { timeAgo } from '../../utils/formatDate';
 import {
@@ -228,9 +229,10 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Pipeline & Follow-up health */}
+      {/* Pipeline, AI agents & Follow-up health */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PipelineControlCard />
+        <AIStatusCard />
         
         <Card>
           <h3 className="font-semibold text-text mb-4">Follow-Up Health</h3>

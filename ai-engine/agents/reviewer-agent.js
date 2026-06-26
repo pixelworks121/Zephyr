@@ -1,15 +1,32 @@
-import OpenAI from 'openai'
-import dotenv from 'dotenv'
-dotenv.config()
-
-// Fallback key prevents the SDK from throwing at import time when no key is set.
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'not-configured' })
+import { getAI2 } from '../config/aiConfig.js'
 
 export const reviewLead = async (lead, analysis, claudeScore) => {
+  const ai2 = getAI2()
+
+  // Graceful fallback if AI 2 is not configured
+  if (!ai2) {
+    console.warn('[ReviewerAgent] AI 2 not configured — skipping review')
+    return {
+      success: false,
+      reviewData: {
+        agreeWithScore: true,
+        reviewerScore: claudeScore.score,
+        finalScore: claudeScore.score,
+        adjustment: 'none',
+        adjustmentReason: 'Second AI agent not configured — using primary score only',
+        missedOpportunities: [],
+        redFlags: [],
+        recommendation: claudeScore.score >= 7 ? 'pursue' : claudeScore.score >= 4 ? 'nurture' : 'skip',
+        recommendationReason: 'Based on primary AI analysis only'
+      },
+      error: 'AI_2 not configured'
+    }
+  }
+
   try {
     const prompt = `
 You are a second-opinion analyst at Pixel Works digital agency.
-Another analyst has already reviewed this lead. Your job is to independently verify their assessment.
+Another AI analyst has already reviewed this lead. Your job is to independently verify their assessment.
 
 LEAD:
 Company: ${lead.companyName}
@@ -26,16 +43,13 @@ BUDGET POTENTIAL: ${claudeScore.budgetPotential}
 ORIGINAL ANALYSIS:
 ${analysis}
 
-Review this assessment and provide your independent opinion.
-Do you agree with the score? Are there factors the first analyst missed?
-
-Respond ONLY in this exact JSON format:
+Respond ONLY in this exact JSON format — no extra text:
 {
   "agreeWithScore": <true|false>,
   "reviewerScore": <number 1-10>,
-  "finalScore": <average of both scores, 1 decimal>,
+  "finalScore": <average of both, 1 decimal>,
   "adjustment": "<none|increase|decrease>",
-  "adjustmentReason": "<why you agree or disagree, 1-2 sentences>",
+  "adjustmentReason": "<1-2 sentences>",
   "missedOpportunities": ["<opportunity1>", "<opportunity2>"],
   "redFlags": ["<flag1>", "<flag2>"],
   "recommendation": "<pursue|nurture|skip>",
@@ -43,59 +57,56 @@ Respond ONLY in this exact JSON format:
 }
 `
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 600,
-      temperature: 0.3
-    })
+    const result = await ai2.ask(prompt, { maxTokens: 600 })
 
-    const rawText = response.choices[0].message.content.trim()
+    if (!result.success) {
+      throw new Error(result.error)
+    }
 
     let reviewData
     try {
-      const cleaned = rawText.replace(/```json|```/g, '').trim()
+      const cleaned = result.text.replace(/```json|```/g, '').trim()
       reviewData = JSON.parse(cleaned)
-    } catch (parseError) {
+    } catch {
       reviewData = {
         agreeWithScore: true,
         reviewerScore: claudeScore.score,
         finalScore: claudeScore.score,
         adjustment: 'none',
-        adjustmentReason: 'Review unavailable — using primary score',
+        adjustmentReason: 'Review parse error — using primary score',
         missedOpportunities: [],
         redFlags: [],
         recommendation: claudeScore.score >= 7 ? 'pursue' : claudeScore.score >= 4 ? 'nurture' : 'skip',
-        recommendationReason: 'Based on primary analysis score'
+        recommendationReason: 'Based on primary analysis'
       }
     }
 
-    reviewData.finalScore = parseFloat(((claudeScore.score + reviewData.reviewerScore) / 2).toFixed(1))
+    reviewData.finalScore = parseFloat(
+      ((claudeScore.score + reviewData.reviewerScore) / 2).toFixed(1)
+    )
 
     return {
       success: true,
       reviewData,
-      tokensUsed: response.usage?.total_tokens || 0
+      tokensUsed: result.tokensUsed,
+      provider: result.provider,
+      model: result.model
     }
   } catch (error) {
     console.error('[ReviewerAgent] Error:', error.message)
-
-    // Graceful fallback if OpenAI is unavailable
-    const fallbackReview = {
-      agreeWithScore: true,
-      reviewerScore: claudeScore.score,
-      finalScore: claudeScore.score,
-      adjustment: 'none',
-      adjustmentReason: 'Second review unavailable — using primary score',
-      missedOpportunities: [],
-      redFlags: [],
-      recommendation: claudeScore.score >= 7 ? 'pursue' : claudeScore.score >= 4 ? 'nurture' : 'skip',
-      recommendationReason: 'Based on primary analysis score only'
-    }
-
     return {
       success: false,
-      reviewData: fallbackReview,
+      reviewData: {
+        agreeWithScore: true,
+        reviewerScore: claudeScore.score,
+        finalScore: claudeScore.score,
+        adjustment: 'none',
+        adjustmentReason: 'Review failed — using primary score',
+        missedOpportunities: [],
+        redFlags: [],
+        recommendation: claudeScore.score >= 7 ? 'pursue' : claudeScore.score >= 4 ? 'nurture' : 'skip',
+        recommendationReason: 'Based on primary analysis only'
+      },
       error: error.message
     }
   }

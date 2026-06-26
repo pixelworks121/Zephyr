@@ -1,31 +1,22 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { getAI1 } from '../config/aiConfig.js'
 import { buildScorePrompt } from '../prompts/score.prompt.js'
-import dotenv from 'dotenv'
-dotenv.config()
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || 'not-configured' })
 
 export const scoreLead = async (lead, analysis) => {
   try {
+    const ai1 = getAI1()
     const prompt = buildScorePrompt(lead, analysis)
 
-    const message = await client.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 500,
-      messages: [{ role: 'user', content: prompt }]
-    })
+    const result = await ai1.ask(prompt, { maxTokens: 500 })
 
-    const rawText = message.content[0].text.trim()
+    if (!result.success) {
+      return { success: false, scoreData: null, error: result.error }
+    }
 
-    // Parse JSON response safely
     let scoreData
     try {
-      // Strip any markdown code fences if present
-      const cleaned = rawText.replace(/```json|```/g, '').trim()
+      const cleaned = result.text.replace(/```json|```/g, '').trim()
       scoreData = JSON.parse(cleaned)
-    } catch (parseError) {
-      console.error('[LeadScorer] JSON parse error:', parseError.message)
-      // Fallback score if JSON is malformed
+    } catch {
       scoreData = {
         score: 5,
         reasoning: 'Score generated with limited data',
@@ -38,20 +29,17 @@ export const scoreLead = async (lead, analysis) => {
       }
     }
 
-    // Clamp score between 1 and 10
     scoreData.score = Math.min(10, Math.max(1, parseFloat(scoreData.score) || 5))
 
     return {
       success: true,
       scoreData,
-      tokensUsed: message.usage.input_tokens + message.usage.output_tokens
+      tokensUsed: result.tokensUsed,
+      provider: result.provider,
+      model: result.model
     }
   } catch (error) {
     console.error('[LeadScorer] Error:', error.message)
-    return {
-      success: false,
-      scoreData: null,
-      error: error.message
-    }
+    return { success: false, scoreData: null, error: error.message }
   }
 }

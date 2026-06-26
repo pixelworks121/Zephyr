@@ -2,6 +2,7 @@
   "name": "zephyr",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "AI-powered lead generation and CRM platform for Pixel Works",
   "workspaces": [
     "client",

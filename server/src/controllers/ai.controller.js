@@ -172,6 +172,9 @@ const aiController = {
 
   async getAIStatus(req, res, next) {
     try {
+      const { getAIConfigStatus } = await loadAiEngine();
+      const aiConfig = getAIConfigStatus();
+
       const [leadsWithScore, leadsWithoutScore, avgAgg] = await Promise.all([
         prisma.lead.count({ where: { aiScore: { not: null } } }),
         prisma.lead.count({ where: { aiScore: null } }),
@@ -180,14 +183,21 @@ const aiController = {
 
       const avgScore = avgAgg._avg.aiScore != null
         ? parseFloat(avgAgg._avg.aiScore.toFixed(1))
-        : 0;
+        : null;
 
       return apiResponse.success(res, {
-        anthropicConfigured: !!process.env.ANTHROPIC_API_KEY,
-        openaiConfigured: !!process.env.OPENAI_API_KEY,
-        leadsWithScore,
-        leadsWithoutScore,
-        avgScore,
+        agents: {
+          ai1: { ...aiConfig.ai1, role: 'Primary (Analyzer + Scorer + Pitch Generator)' },
+          ai2: { ...aiConfig.ai2, role: 'Secondary (Reviewer + Discussion Partner)' },
+        },
+        features: {
+          analysis: aiConfig.ai1.configured,
+          scoring: aiConfig.ai1.configured,
+          pitchGeneration: aiConfig.ai1.configured,
+          reviewerAgent: aiConfig.ai2.configured,
+          multiAgentDiscussion: aiConfig.ai1.configured && aiConfig.ai2.configured,
+        },
+        stats: { leadsWithScore, leadsWithoutScore, avgScore },
       });
     } catch (err) {
       next(err);

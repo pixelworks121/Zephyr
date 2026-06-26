@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
 });
 
 // Attach bearer token from localStorage on every request.
@@ -107,6 +107,7 @@ export const aiAPI = {
   analyze: (id) => api.post(`/ai/analyze/${id}`),
   batchAnalyze: (leadIds) => api.post('/ai/batch-analyze', { leadIds }),
   discuss: (id) => api.post(`/ai/discuss/${id}`),
+  status: () => api.get('/ai/status'),
 };
 
 export default api;
