@@ -7,6 +7,9 @@ function loadScraper() {
   return scraperPromise;
 }
 
+// Minimum Hunter confidence (0-100) to accept an email as authentic.
+const MIN_EMAIL_CONFIDENCE = 50;
+
 function domainFromWebsite(website) {
   if (!website) return null;
   try {
@@ -16,13 +19,10 @@ function domainFromWebsite(website) {
   }
 }
 
-// Discover contact details for a lead using (in order, cheapest/most-reliable first):
-//   1. Public website scrape (free; Playwright — may be unavailable in some hosts)
-//   2. Hunter.io domain search (HTTP; real email + contact name) — only for
-//      higher-value leads to conserve the free 25/month quota
-//   3. Generic email pattern (info@domain) as a last resort so there is always
-//      something for an employee to contact
-// Returns the fields that were found (nulls for the rest).
+// Discover ONLY authentic contact details for a lead. No guessed/pattern emails.
+//   1. Public website scrape — emails/phones the company itself published (authentic)
+//   2. Hunter.io domain search — real emails, accepted only if confidence >= threshold
+// If nothing authentic is found, the field stays empty (never fabricated).
 async function findContactDetails(lead) {
   const result = {
     email: null,
@@ -31,71 +31,64 @@ async function findContactDetails(lead) {
     linkedinUrl: null,
     twitterUrl: null,
     source: null,
+    confidence: null,
   };
 
   if (!lead.website) return result;
   const domain = domainFromWebsite(lead.website);
   const scraper = await loadScraper();
 
-  // 1. Public website scrape (free). Playwright may not be installed in prod —
-  //    never let that crash enrichment.
+  // 1. Public website scrape (free). Emails on the company's own site are authentic.
+  //    Playwright may be unavailable in some hosts — never let that crash enrichment.
   try {
     const pub = await scraper.findPublicContactInfo(lead.website);
     if (pub && pub.success && pub.data) {
-      result.email = result.email || pub.data.email || null;
-      result.phone = result.phone || pub.data.phone || null;
-      result.linkedinUrl = result.linkedinUrl || pub.data.linkedinUrl || null;
-      result.twitterUrl = result.twitterUrl || pub.data.twitterUrl || null;
-      if (pub.data.email) result.source = 'website';
+      if (pub.data.email) {
+        result.email = pub.data.email;
+        result.source = 'website';
+        result.confidence = 100; // published on their own site
+      }
+      result.phone = pub.data.phone || null;
+      result.linkedinUrl = pub.data.linkedinUrl || null;
+      result.twitterUrl = pub.data.twitterUrl || null;
     }
   } catch (e) {
     // Playwright/browser unavailable — skip silently.
   }
 
-  // 2. Hunter.io domain search — only if we still have no email and the lead
-  //    looks worth a credit (score >= 7), to protect the 25/month free quota.
-  if (!result.email && domain && (lead.aiScore == null || lead.aiScore >= 7)) {
+  // 2. Hunter.io domain search — accept the top email only if confidence is high
+  //    enough to be considered authentic. Conserve the free quota: only when we
+  //    still have no email.
+  if (!result.email && domain) {
     try {
       const h = await scraper.hunterDomainSearch(domain);
       if (h && h.success) {
-        if (h.topEmail) {
+        const top = (h.emails && h.emails[0]) || null;
+        const confidence = top ? top.confidence : null;
+        if (h.topEmail && confidence != null && confidence >= MIN_EMAIL_CONFIDENCE) {
           result.email = h.topEmail;
           result.source = 'hunter';
-        }
-        if (!result.contactName && h.topContact && h.topContact.name) {
-          result.contactName = h.topContact.name;
+          result.confidence = confidence;
+          if (!result.contactName && h.topContact && h.topContact.name) {
+            result.contactName = h.topContact.name;
+          }
         }
       }
     } catch (e) {
-      // Hunter unavailable / quota — skip.
-    }
-  }
-
-  // 3. Last resort: a generic mailbox so employees always have a starting point.
-  if (!result.email && domain) {
-    try {
-      const patterns = scraper.guessEmailPatterns(domain);
-      if (patterns && patterns.length) {
-        result.email = patterns[0]; // info@domain
-        result.source = 'pattern';
-      }
-    } catch (e) {
-      // ignore
+      // Hunter unavailable / quota exhausted — leave email empty (no fabrication).
     }
   }
 
   return result;
 }
 
-// Fill a lead's MISSING contact fields in the DB (never overwrites existing data).
-// Returns { filled: [fields], found } or null. Never throws.
+// Fill a lead's MISSING contact fields with authentic data only (never overwrites
+// existing data, never fabricates). Returns { filled, found } or null. Never throws.
 async function enrichLeadContact(leadId) {
   try {
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });
     if (!lead || !lead.website) return null;
-
-    // Already has both an email and a phone — nothing to do.
-    if (lead.email && lead.phone) return null;
+    if (lead.email && lead.phone) return null; // already reachable
 
     const found = await findContactDetails(lead);
 
