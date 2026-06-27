@@ -7,6 +7,7 @@
 // activity. Resilient: failures are logged and skipped, never aborts the run.
 
 const prisma = require('../src/utils/prismaClient');
+const { enrichLeadContact } = require('../src/utils/enrichContact');
 
 let aiEnginePromise = null;
 function loadAiEngine() {
@@ -76,6 +77,12 @@ async function main() {
       } else {
         failed++;
         console.error(`[Backfill] ❌ ${tag} — ${JSON.stringify(result.errors)}`);
+      }
+
+      // Also find & store contact details so employees can reach the lead.
+      const enriched = await enrichLeadContact(lead.id);
+      if (enriched && enriched.filled.length) {
+        console.log(`[Backfill] 📇 ${tag} — contact (${enriched.found.source}): ${enriched.filled.join(', ')}`);
       }
     } catch (err) {
       failed++;

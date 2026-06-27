@@ -1,4 +1,5 @@
 const prisma = require('./prismaClient');
+const { enrichLeadContact } = require('./enrichContact');
 
 // The ai-engine package is ESM ("type":"module") while this server is CommonJS,
 // so it must be loaded via dynamic import() rather than require().
@@ -90,6 +91,28 @@ const processQueue = async () => {
           console.log(`[AutoAnalyze] ✅ Lead ${leadId} analyzed — Score: ${result.finalScore}/10`);
         } else {
           console.error(`[AutoAnalyze] ❌ Lead ${leadId} analysis failed:`, JSON.stringify(result.errors));
+        }
+
+        // Find & store contact details so employees can actually reach the lead.
+        // Runs regardless of AI success; never throws.
+        try {
+          const enriched = await enrichLeadContact(leadId);
+          if (enriched && enriched.filled.length) {
+            console.log(`[AutoAnalyze] 📇 Lead ${leadId} contact enriched (${enriched.found.source}): ${enriched.filled.join(', ')}`);
+            const userId = lead.assignedToId || (await getSystemUserId());
+            if (userId) {
+              await prisma.activity.create({
+                data: {
+                  leadId,
+                  userId,
+                  type: 'NOTE',
+                  content: `Contact details found automatically (${enriched.found.source}): ${enriched.filled.join(', ')}`,
+                },
+              });
+            }
+          }
+        } catch (e) {
+          console.error(`[AutoAnalyze] Contact enrichment error for ${leadId}:`, e.message);
         }
 
         // Wait 3 seconds between analyses to respect API rate limits.
