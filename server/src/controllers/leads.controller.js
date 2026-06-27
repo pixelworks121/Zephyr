@@ -4,6 +4,16 @@ const prisma = require('../utils/prismaClient');
 const apiResponse = require('../utils/apiResponse');
 const { queueLeadForAnalysis, queueMultipleLeadsForAnalysis } = require('../utils/autoAnalyze');
 
+// The scraper package is ESM; load the (dependency-free) quality filter lazily
+// via dynamic import so this CommonJS controller can use it.
+let qualityFilterPromise = null;
+function loadQualityFilter() {
+  if (!qualityFilterPromise) {
+    qualityFilterPromise = import('@zephyr/scraper/filters/leadQualityFilter.js');
+  }
+  return qualityFilterPromise;
+}
+
 const leadStatusValues = Object.values(LEAD_STATUSES);
 const businessSizeValues = ['SOLO', 'SMALL', 'MEDIUM', 'LARGE'];
 const sourceValues = ['AI_DISCOVERED', 'MANUAL', 'CSV_IMPORT'];
@@ -77,6 +87,24 @@ const leadsController = {
       data.email = cleanUrl(data.email);
       data.linkedinUrl = cleanUrl(data.linkedinUrl);
       data.twitterUrl = cleanUrl(data.twitterUrl);
+
+      // Quality guard — only for AI_DISCOVERED leads (manual/CSV bypass the filter).
+      if (data.source === 'AI_DISCOVERED') {
+        try {
+          const { isQualityLead } = await loadQualityFilter();
+          const qualityCheck = isQualityLead({
+            companyName: data.companyName,
+            website: data.website,
+            snippet: '',
+          });
+          if (!qualityCheck.pass) {
+            return apiResponse.error(res, `Lead rejected by quality filter: ${qualityCheck.reason}`, 400);
+          }
+        } catch (e) {
+          // Never block lead creation if the filter fails to load — log and continue.
+          console.error('[Leads] Quality filter unavailable (allowing lead):', e.message);
+        }
+      }
 
       if (data.email) {
         const existing = await prisma.lead.findFirst({ where: { email: data.email } });

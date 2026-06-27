@@ -1,5 +1,6 @@
 export { deduplicateLeads, discoverLeadsFromSearch, runDiscoveryPipeline } from './pipeline.js'
-export { googleSearch, generateLeadSearchQueries } from './sources/google-search.js'
+export { googleSearch, serperSearch, generateLeadSearchQueries, generateNeedBasedQueries } from './sources/google-search.js'
+export { isQualityLead, filterQualityLeads, preScoreLead } from './filters/leadQualityFilter.js'
 export { searchGoogleMaps, DISCOVERY_TARGETS } from './sources/google-maps.js'
 export { extractCompanyInfo, quickWebsiteAudit } from './sources/browser-agent.js'
 export { findPublicContactInfo, guessEmailPatterns } from './enrichment/public-contact.js'

@@ -74,49 +74,88 @@ export const serperSearch = async (query, options = {}) => {
 export const googleSearch = serperSearch
 
 // Generate smart search queries for finding leads
-// targetType: 'agency' | 'ecommerce' | 'startup' | 'local' | 'saas'
+// targetType: 'agency' | 'ecommerce' | 'startup' | 'local' | 'service' | 'outdated'
+// Targeted at small-to-medium businesses that actually need digital services
+// (not marketplaces / big brands).
 export const generateLeadSearchQueries = (targetType, region = '') => {
-  const regionSuffix = region ? ` ${region}` : ''
+  const r = region ? ` in ${region}` : ''
 
   const queryTemplates = {
+    // Small agencies that need better websites/tools
     agency: [
-      `marketing agency${regionSuffix} website`,
-      `digital marketing company${regionSuffix}`,
-      `branding agency${regionSuffix} services`,
-      `creative agency${regionSuffix} portfolio`,
-      `advertising agency${regionSuffix} clients`
+      `small digital marketing agency${r} "our services"`,
+      `boutique creative agency${r} portfolio website`,
+      `local marketing consultant${r} website`,
+      `freelance web designer${r} hire`,
+      `small branding studio${r} clients`
     ],
+
+    // Small ecommerce stores (not marketplaces)
     ecommerce: [
-      `online store${regionSuffix} products`,
-      `ecommerce business${regionSuffix} shop`,
-      `shopify store${regionSuffix} products`,
-      `woocommerce store${regionSuffix}`,
-      `dropshipping store${regionSuffix}`
+      `independent online store${r} handmade products`,
+      `small ecommerce brand${r} shopify store`,
+      `local products online store${r}`,
+      `D2C brand${r} website`,
+      `niche online shop${r} products`
     ],
+
+    // Early stage startups
     startup: [
-      `startup${regionSuffix} app launch`,
-      `new saas product${regionSuffix}`,
-      `tech startup${regionSuffix} funding`,
-      `software startup${regionSuffix} beta`,
-      `fintech startup${regionSuffix}`
+      `early stage startup${r} MVP launch`,
+      `bootstrapped saas${r} product`,
+      `new tech startup${r} founder`,
+      `seed stage startup${r} app`,
+      `indie hacker${r} product launch`
     ],
+
+    // Local businesses with weak digital presence
     local: [
-      `local business${regionSuffix} website`,
-      `restaurant${regionSuffix} website`,
-      `salon${regionSuffix} booking website`,
-      `gym${regionSuffix} fitness website`,
-      `dental clinic${regionSuffix} website`
+      `local restaurant${r} "order online"`,
+      `beauty salon${r} "book appointment" website`,
+      `local gym${r} fitness website membership`,
+      `dental clinic${r} website appointment`,
+      `photography studio${r} portfolio website`,
+      `event planning company${r} website`,
+      `coaching institute${r} website admission`,
+      `interior designer${r} portfolio website`
     ],
-    saas: [
-      `b2b saas company${regionSuffix}`,
-      `software company${regionSuffix} product`,
-      `cloud software${regionSuffix} solution`,
-      `enterprise software${regionSuffix}`,
-      `hr software${regionSuffix} solution`
+
+    // Service businesses that need leads
+    service: [
+      `IT services company${r} small business`,
+      `HR consulting firm${r} website`,
+      `accounting firm${r} small business clients`,
+      `legal services${r} small firm website`,
+      `recruitment agency${r} website`
+    ],
+
+    // Businesses with outdated/no website
+    outdated: [
+      `"established in" local business${r} services`,
+      `traditional business${r} going digital`,
+      `small manufacturer${r} website products`,
+      `family business${r} online presence`,
+      `local shop${r} website contact`
     ]
   }
 
-  return queryTemplates[targetType] || queryTemplates.agency
+  return queryTemplates[targetType] || queryTemplates.local
+}
+
+// More targeted discovery — searches for businesses
+// that specifically signal they NEED digital services
+export const generateNeedBasedQueries = (region = '') => {
+  const r = region ? ` ${region}` : ''
+  return [
+    `small business${r} needs website redesign`,
+    `startup${r} looking for web developer`,
+    `local business${r} digital marketing help`,
+    `ecommerce store${r} improve online sales`,
+    `company${r} needs mobile app development`,
+    `business${r} hire UI UX designer`,
+    `startup${r} branding logo design`,
+    `small agency${r} white label development`
+  ]
 }
 
 // Extract domain from URL
