@@ -1,6 +1,6 @@
 # Zephyr
 
-AI-powered lead generation and CRM platform for **Pixel Works**.
+AI-powered lead generation and CRM platform for **Pixel Works** by Shresth.
 
 ## Packages
 
