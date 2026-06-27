@@ -3,6 +3,7 @@ import { OpenAIProvider } from './OpenAIProvider.js'
 import { GeminiProvider } from './GeminiProvider.js'
 import { GroqProvider } from './GroqProvider.js'
 import { OpenRouterProvider } from './OpenRouterProvider.js'
+import { NvidiaProvider } from './NvidiaProvider.js'
 
 // Supported providers map
 const PROVIDERS = {
@@ -10,7 +11,8 @@ const PROVIDERS = {
   openai: OpenAIProvider,
   gemini: GeminiProvider,
   groq: GroqProvider,
-  openrouter: OpenRouterProvider
+  openrouter: OpenRouterProvider,
+  nvidia: NvidiaProvider
 }
 
 // Supported providers info (for status endpoint)
@@ -39,6 +41,11 @@ export const PROVIDER_INFO = {
     name: 'OpenRouter',
     models: ['deepseek/deepseek-r1', 'deepseek/deepseek-chat', 'meta-llama/llama-3.3-70b-instruct'],
     defaultModel: 'deepseek/deepseek-r1'
+  },
+  nvidia: {
+    name: 'NVIDIA NIM',
+    models: ['deepseek-ai/deepseek-v4-flash', 'deepseek-ai/deepseek-r1', 'meta/llama-3.3-70b-instruct'],
+    defaultModel: 'deepseek-ai/deepseek-v4-flash'
   }
 }
 
@@ -65,4 +72,4 @@ export const createProvider = (providerName, apiKey, model) => {
   return new ProviderClass(apiKey, model || defaultModel)
 }
 
-export { AnthropicProvider, OpenAIProvider, GeminiProvider, GroqProvider, OpenRouterProvider }
+export { AnthropicProvider, OpenAIProvider, GeminiProvider, GroqProvider, OpenRouterProvider, NvidiaProvider }

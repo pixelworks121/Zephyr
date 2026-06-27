@@ -139,6 +139,18 @@ if (!process.env.AI_1_API_KEY) {
       const text = message.content || message.reasoning || '(reasoning model — no final content in token budget)'
       log.pass('AI_1:OPENROUTER', `Model ${process.env.AI_1_MODEL} responded: "${text.substring(0, 50)}"`)
 
+    } else if (provider === 'nvidia') {
+      const OpenAI = (await import('openai')).default
+      const client = new OpenAI({ apiKey: process.env.AI_1_API_KEY, baseURL: 'https://integrate.api.nvidia.com/v1' })
+      const response = await client.chat.completions.create({
+        model: process.env.AI_1_MODEL,
+        max_tokens: 80,
+        messages: [{ role: 'user', content: 'Reply with exactly: ZEPHYR_AI_1_OK' }]
+      })
+      const message = response.choices[0].message
+      const text = message.content || message.reasoning_content || '(no content)'
+      log.pass('AI_1:NVIDIA', `Model ${process.env.AI_1_MODEL} responded: "${text.substring(0, 50)}"`)
+
     } else {
       log.fail('AI_1', `Unknown provider: ${provider}`)
     }
@@ -203,6 +215,16 @@ if (!process.env.AI_2_API_KEY) {
         messages: [{ role: 'user', content: 'Reply with exactly: ZEPHYR_AI_2_OK' }]
       })
       log.pass('AI_2:OPENROUTER', `Model ${process.env.AI_2_MODEL} responded correctly`)
+
+    } else if (provider === 'nvidia') {
+      const OpenAI = (await import('openai')).default
+      const client = new OpenAI({ apiKey: process.env.AI_2_API_KEY, baseURL: 'https://integrate.api.nvidia.com/v1' })
+      const response = await client.chat.completions.create({
+        model: process.env.AI_2_MODEL,
+        max_tokens: 80,
+        messages: [{ role: 'user', content: 'Reply with exactly: ZEPHYR_AI_2_OK' }]
+      })
+      log.pass('AI_2:NVIDIA', `Model ${process.env.AI_2_MODEL} responded correctly`)
 
     } else {
       log.fail('AI_2', `Unknown provider: ${provider}`)
