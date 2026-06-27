@@ -1,0 +1,26 @@
+name: Keep Backend Awake
+
+# Render's free tier spins the backend down after ~15 minutes of no inbound
+# traffic. Pinging the health endpoint every 10 minutes keeps it awake so the
+# autonomous lead-analysis sweeper (runs every minute) keeps working 24/7.
+on:
+  schedule:
+    - cron: '*/10 * * * *' # every 10 minutes (UTC)
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          for i in 1 2 3; do
+            CODE=$(curl -sS -m 60 -o /dev/null -w "%{http_code}" https://zephyr-backend-43vu.onrender.com/api/health || echo "000")
+            echo "Attempt $i -> HTTP $CODE"
+            if [ "$CODE" = "200" ]; then
+              echo "Backend is awake."
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Backend did not return 200 after retries (it may be cold-starting); will try again next schedule."
