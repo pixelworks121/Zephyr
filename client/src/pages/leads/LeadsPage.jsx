@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -59,14 +59,37 @@ export default function LeadsPage() {
   const { isAdmin } = useAuth();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [searchInput, setSearchInput] = useState('');
+  // Initialize list state from the URL so it survives navigating into a lead and
+  // back (the page/filters/search are preserved instead of resetting to page 1).
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || '');
   const search = useDebounce(searchInput, 400);
-  const [filters, setFilters] = useState(emptyFilters);
-  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState(() => ({
+    status: searchParams.get('status') || '',
+    industry: searchParams.get('industry') || '',
+    country: searchParams.get('country') || '',
+    source: searchParams.get('source') || '',
+    assignedToId: searchParams.get('assignedToId') || '',
+  }));
+  const [page, setPage] = useState(() => Math.max(1, parseInt(searchParams.get('page'), 10) || 1));
   const [addOpen, setAddOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [editLead, setEditLead] = useState(null);
+
+  // Keep the URL in sync with the current list state (replace — no history spam).
+  // On back-navigation the component reads these params on mount and restores.
+  useEffect(() => {
+    const next = {};
+    if (page > 1) next.page = String(page);
+    if (search) next.q = search;
+    if (filters.status) next.status = filters.status;
+    if (filters.industry) next.industry = filters.industry;
+    if (filters.country) next.country = filters.country;
+    if (filters.source) next.source = filters.source;
+    if (filters.assignedToId) next.assignedToId = filters.assignedToId;
+    setSearchParams(next, { replace: true });
+  }, [page, search, filters, setSearchParams]);
 
   const setFilter = (key) => (e) => {
     setFilters((f) => ({ ...f, [key]: e.target.value }));
