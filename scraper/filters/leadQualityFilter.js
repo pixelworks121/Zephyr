@@ -142,6 +142,67 @@ export const isQualityLead = (lead) => {
     }
   }
 
+  // ── Content / article / listicle detection ──────────────────────────────────
+  // Search often returns blog posts, guides and listicles whose "title" is not a
+  // business at all. These are not prospects — reject them.
+
+  // Parse hostname + path from the URL.
+  let host = '', path = ''
+  if (website) {
+    try {
+      const u = new URL(website.startsWith('http') ? website : `https://${website}`)
+      host = u.hostname.toLowerCase()
+      path = u.pathname.toLowerCase()
+    } catch {
+      path = website
+    }
+  }
+
+  // Check 7 — Government / education sites are never prospects
+  if (/(^|\.)gov(\.[a-z]{2,})?(\/|$)/.test(host) || /\.edu(\.[a-z]{2,})?(\/|$)/.test(host) || host.endsWith('.gov') || host.endsWith('.edu') || host.includes('.gov.') || host.includes('.edu.')) {
+    return { pass: false, reason: 'Government/education site, not a prospect' }
+  }
+
+  // Check 8 — Blog subdomain or content URL path (article, not a homepage)
+  if (/^blogs?\./.test(host) || host.includes('.blog')) {
+    return { pass: false, reason: 'Blog subdomain, not a business' }
+  }
+  const CONTENT_PATHS = [
+    '/blog', '/article', '/guide', '/resource', '/content/', '/news', '/press',
+    '/insight', '/case-stud', '/how-to', '/tutorial', '/whitepaper', '/ebook',
+    '/glossary', '/wiki', '/learn/', '/knowledge'
+  ]
+  for (const p of CONTENT_PATHS) {
+    if (path.includes(p)) {
+      return { pass: false, reason: `Content/article URL (${p})` }
+    }
+  }
+
+  // Check 9 — Listicle / guide / question style titles (not a company name)
+  const trimmed = name.trim()
+  if (/^\d+$/.test(trimmed)) {
+    return { pass: false, reason: 'Numeric-only name' }
+  }
+  // "Top 12 ...", "12 best ...", "7 ways ..."
+  if (/^(top\s+)?\d{1,3}\s+\w/.test(trimmed)) {
+    return { pass: false, reason: 'Listicle title' }
+  }
+  const CONTENT_TITLE_PHRASES = [
+    'how to', 'ultimate guide', 'complete guide', 'a guide', 'guide to', 'guide for',
+    'what is', 'what are', 'why you', 'why your', 'step by step', 'step-by-step',
+    'tutorial', 'best practices', 'everything you need', ' vs ', 'vs.', 'explained',
+    'a complete', 'the complete', 'introduction to', 'beginner', 'checklist', 'faq'
+  ]
+  for (const ph of CONTENT_TITLE_PHRASES) {
+    if (name.includes(ph)) {
+      return { pass: false, reason: `Article-style title: "${ph.trim()}"` }
+    }
+  }
+  // "best <X> companies/services/tools/software/agencies/platforms"
+  if (/\bbest\b/.test(name) && /(compan|service|tool|software|agenc|platform|solution|app)/.test(name)) {
+    return { pass: false, reason: 'Listicle title (best X companies/services)' }
+  }
+
   return { pass: true, reason: 'Passed all quality checks' }
 }
 
