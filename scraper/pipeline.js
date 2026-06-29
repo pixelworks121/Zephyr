@@ -1,4 +1,4 @@
-import { googleSearch, serperSearch, generateLeadSearchQueries, generateNeedBasedQueries, searchResultToLead, getSerperUsage } from './sources/google-search.js'
+import { googleSearch, serperSearch, generateLeadSearchQueries, searchResultToLead, getSerperUsage } from './sources/google-search.js'
 import { extractCompanyInfo } from './sources/browser-agent.js'
 import { getProductHuntLeads } from './sources/product-hunt.js'
 import { findPublicContactInfo } from './enrichment/public-contact.js'
@@ -131,17 +131,8 @@ const runGoogleSearchDiscovery = async (options = {}) => {
     }
   }
 
-  // Need-based searches (high intent — businesses signalling they need services)
-  console.log('[Pipeline] Running need-based searches...')
-  for (const query of generateNeedBasedQueries()) {
-    try {
-      const result = await serperSearch(query, { num: 10 })
-      if (result.success) {
-        leads.push(...result.results.filter(r => !isExcludedDomain(r.url)).map(searchResultToLead))
-      }
-    } catch (e) { console.error('[Pipeline] Need-based search error:', e.message) }
-    await sleep(500)
-  }
+  // Need-based searches removed — they returned SEO blog articles/guides/listicles
+  // rather than real prospect businesses, polluting the pipeline.
 
   console.log(`[Pipeline] Google Search found ${leads.length} raw leads before filtering`)
   return leads
